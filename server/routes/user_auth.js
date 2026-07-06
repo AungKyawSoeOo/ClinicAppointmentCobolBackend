@@ -1,8 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const userRegisterService = require("../services/userRegisterService");
+const clinicRegisterService = require("../services/clinicRegisterService");
 const db = require("../../db");
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const path = require('path');
+
+// Setup multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, '..', '..', 'uploads/'));
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 router.post("/register", async (req, res) => {
     // Capture 'username' along with email and password
@@ -48,13 +63,59 @@ router.post("/register", async (req, res) => {
     }
 });
 
+router.post("/register-clinic", upload.single('licensePhoto'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: "License photo is required", result: false });
+    }
+
+    const { username, email, password, liscensenum, phonenum, address, city_id, township_id } = req.body;
+    const licensePhotoName = req.file.filename;
+
+    // Validate with COBOL
+    const isValidationPassed = await clinicRegisterService.clinicRegister(username, email, password, liscensenum, phonenum);
+    if (!isValidationPassed) {
+        return res.status(400).json({ message: "Registration failed", result: false });
+    }
+
+    try {
+        await db.query('BEGIN');
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Insert into 'users' table
+        const userRes = await db.query(
+            'INSERT INTO users (email, password, role, status) VALUES ($1, $2, $3, $4) RETURNING user_id',
+            [email, hashedPassword, 'clinic', 'pending']
+        );
+        const newUserId = userRes.rows[0].user_id;
+
+        // Insert into 'clinics' table
+        await db.query(
+            'INSERT INTO clinics (user_id, clinic_name, clinic_license_no, phone, license_photo, address, city_id, township_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+            [newUserId, username, liscensenum, phonenum, licensePhotoName, address, city_id || null, township_id || null]
+        );
+
+        await db.query('COMMIT');
+        res.status(201).json({ message: "Registration successful!", result: true });
+    } catch (error) {
+        await db.query('ROLLBACK');
+        console.error("Database Error:", error);
+        if (error.code === '23505') {
+            return res.status(409).json({
+                message: "This email is already registered.",
+                result: false
+            });
+        }
+        res.status(500).json({ message: "Error saving to database", result: false });
+    }
+});
+
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     try {
         // Check if user exists and join patients to get the full name
         const userRes = await db.query(
-            `SELECT u.user_id, u.email, u.password, u.role, p.full_name 
+            `SELECT u.user_id, u.email, u.password, u.role, u.status, p.full_name 
              FROM users u 
              LEFT JOIN patients p ON u.user_id = p.user_id 
              WHERE u.email = $1`,
@@ -66,6 +127,13 @@ router.post("/login", async (req, res) => {
         }
 
         const user = userRes.rows[0];
+
+        if (!user.status || user.status.toLowerCase() !== 'active') {
+            return res.status(403).json({
+                message: "Your account is not active. Please contact administrator.",
+                result: false
+            });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
 
@@ -79,7 +147,8 @@ router.post("/login", async (req, res) => {
             result: true,
             userId: user.user_id,
             role: user.role,
-            userName: user.full_name || 'Patient'
+            userName: user.full_name || 'Patient',
+            status: user.status
         });
 
     } catch (error) {
