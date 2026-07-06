@@ -115,9 +115,10 @@ router.post("/login", async (req, res) => {
     try {
         // Check if user exists and join patients to get the full name
         const userRes = await db.query(
-            `SELECT u.user_id, u.email, u.password, u.role, u.status, p.full_name 
+            `SELECT u.user_id, u.email, u.password, u.role, u.status, p.full_name, c.clinic_name
              FROM users u 
              LEFT JOIN patients p ON u.user_id = p.user_id 
+             LEFT JOIN clinics c ON u.user_id = c.user_id
              WHERE u.email = $1`,
             [email]
         );
@@ -127,6 +128,16 @@ router.post("/login", async (req, res) => {
         }
 
         const user = userRes.rows[0];
+
+        // Determine the display name based on role
+        let displayName = 'User';
+        if (user.role === 'admin') {
+            displayName = user.full_name || 'Administrator';
+        } else if (user.role === 'patient') {
+            displayName = user.full_name || 'Patient';
+        } else if (user.role === 'clinic') {
+            displayName = user.clinic_name || 'Clinic';
+        }
 
         if (!user.status || user.status.toLowerCase() !== 'active') {
             return res.status(403).json({
@@ -147,7 +158,7 @@ router.post("/login", async (req, res) => {
             result: true,
             userId: user.user_id,
             role: user.role,
-            userName: user.full_name || 'Patient',
+            userName: displayName,
             status: user.status
         });
 

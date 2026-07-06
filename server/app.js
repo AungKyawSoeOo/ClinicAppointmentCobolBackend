@@ -4,14 +4,18 @@ const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/user_auth");
 const locationRoutes = require("./routes/location");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 app.use(cors({
     origin: 'http://localhost:4200'
 }));
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 app.use("/api", authRoutes);
 app.use("/api", locationRoutes);
+app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
