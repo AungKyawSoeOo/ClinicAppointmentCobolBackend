@@ -115,7 +115,7 @@ router.post("/login", async (req, res) => {
     try {
         // Check if user exists and join patients to get the full name
         const userRes = await db.query(
-            `SELECT u.user_id, u.email, u.password, u.role, u.status, p.full_name, c.clinic_name
+            `SELECT u.user_id, u.email, u.password, u.role, u.status, p.full_name, c.clinic_name, c.clinic_id
              FROM users u 
              LEFT JOIN patients p ON u.user_id = p.user_id 
              LEFT JOIN clinics c ON u.user_id = c.user_id
@@ -157,6 +157,7 @@ router.post("/login", async (req, res) => {
             message: "Login successful",
             result: true,
             userId: user.user_id,
+            clinicId: user.clinic_id || null,
             role: user.role,
             userName: displayName,
             status: user.status

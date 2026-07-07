@@ -6,6 +6,11 @@ const authRoutes = require("./routes/user_auth");
 const locationRoutes = require("./routes/location");
 const adminRoutes = require("./routes/admin");
 const clinicRoutes = require("./routes/clinic");
+const doctorRoutes = require("./routes/doctor");
+const { initCron } = require("./cron");
+
+// Initialize background jobs
+initCron();
 
 const app = express();
 app.use(cors({
@@ -18,6 +23,7 @@ app.use("/api", authRoutes);
 app.use("/api", locationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api", clinicRoutes);
+app.use("/api", doctorRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
