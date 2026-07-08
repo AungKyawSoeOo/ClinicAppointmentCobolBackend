@@ -1,22 +1,48 @@
 const koffi = require("koffi");
 const path = require("path");
 
-const clinicRegisterLibPath = path.join(__dirname, "..", "..", "bin", "clinic-register.dll");
+// kps::Check if the platform is Windows 
+const isWindows = process.platform === "win32";
 
-// Initialize the COBOL runtime
-const libsFolder = path.join(__dirname, "..", "libs");
-const libcobPath = path.join(libsFolder, "libcob-4.dll");
+// kps:: Set the appropriate file extension for the shared library based on the platform
+const ext = isWindows ? ".dll" : ".so";
 
-const originalDirectory = process.cwd();
-try {
-    process.chdir(libsFolder);
-    const libcob = koffi.load(libcobPath);
+// for windows
+// const clinicRegisterLibPath = path.join(__dirname, "..", "..", "bin", "clinic-register.dll");
+
+// For both windows and linux
+const clinicRegisterLibPath = path.join(__dirname, "..", "..", "bin", `clinic-register${ext}`);
+
+try{
+    let libcob;
+
+    if(isWindows){
+        // Initialize the COBOL runtime
+        const libsFolder = path.join(__dirname, "..", "libs");
+        const libcobPath = path.join(libsFolder, "libcob-4.dll");
+
+        const originalDirectory = process.cwd();
+        try {
+            process.chdir(libsFolder);
+            const libcob = koffi.load(libcobPath);
+            const initCobol = libcob.func("cob_init", "void", ["int", "void*"]);
+            initCobol(0, null);
+
+        } catch (e) {
+        } finally {
+            process.chdir(originalDirectory);
+        }
+    }else{
+        libcob = koffi.load("libcob.so");
+    }
+
     const initCobol = libcob.func("cob_init", "void", ["int", "void*"]);
     initCobol(0, null);
+    console.log("COBOL runtime initialized successfully.");
 
-} catch (e) {
-} finally {
-    process.chdir(originalDirectory);
+}catch (error) {
+    console.error("Error loading the clinic-register library:", error);
+    throw error;
 }
 
 const clinicRegisterLib = koffi.load(clinicRegisterLibPath);
