@@ -73,4 +73,33 @@ router.get('/clinics/:clinicId/doctors', async (req, res) => {
     }
 });
 
+// Fetch a single doctor with their timeslots for the next 14 days
+router.get('/doctors/:doctorId/timeslots', async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+
+        const doctorRes = await db.query('SELECT * FROM doctors WHERE doctor_id = $1', [doctorId]);
+        if (doctorRes.rows.length === 0) {
+            return res.status(404).json({ result: false, message: 'Doctor not found' });
+        }
+
+        const doctor = doctorRes.rows[0];
+
+        const slotsRes = await db.query(`
+            SELECT * FROM time_slots 
+            WHERE doctor_id = $1 
+            AND slot_date >= CURRENT_DATE
+            AND slot_date <= CURRENT_DATE + INTERVAL '14 days'
+            ORDER BY slot_date ASC, slot_start ASC
+        `, [doctorId]);
+
+        doctor.time_slots = slotsRes.rows;
+
+        res.status(200).json({ result: true, data: doctor });
+    } catch (error) {
+        console.error('Error fetching doctor timeslots:', error);
+        res.status(500).json({ result: false, message: 'Internal server error' });
+    }
+});
+
 module.exports = router;
