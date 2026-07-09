@@ -112,10 +112,10 @@ router.get("/clinics/:id", async (req, res) => {
     }
 });
 
-// ဆရာဝန်တစ်ဦးချင်းစီ၏ သတ်မှတ်ရက်စွဲအလိုက် Bookings အစစ်အမှန်များကို ဆွဲထုတ်ပေးမည့် API
+
 router.get('/clinics/doctors/:doctorId/bookings', async (req, res) => {
     const { doctorId } = req.params;
-    const { date } = req.query; // Query string ကနေ yyyy-MM-dd ပုံစံနဲ့ လာပါမယ်
+    const { date } = req.query; 
 
     try {
         const queryText = `

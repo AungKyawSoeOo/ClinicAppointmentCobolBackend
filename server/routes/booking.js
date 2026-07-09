@@ -51,7 +51,6 @@ router.put('/cancel/:appointmentId', async (req, res) => {
     const { appointmentId } = req.params;
 
     try {
-        // ၁။ အဆိုပါ appointment ရှိမရှိနဲ့ လက်ရှိ status ကို စစ်မယ်
         const appointmentCheck = await pool.query(
             'SELECT slot_id, status FROM appointments WHERE appointment_id = $1', 
             [appointmentId]
@@ -67,13 +66,11 @@ router.put('/cancel/:appointmentId', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Appointment is already cancelled' });
         }
 
-        // ၂။ appointments table မှာ status ကို 'cancelled' လို့ ပြောင်းမယ်
         await pool.query(
             "UPDATE appointments SET status = 'cancelled' WHERE appointment_id = $1",
             [appointmentId]
         );
 
-        // ၃။ အရေးကြီးဆုံးအချက် - အဲဒီ ရက်ချိန်းဖျက်လိုက်တဲ့ အချိန်ပိုင်း (Slot) ကို တခြားလူ ပြန်ယူလို့ရအောင် is_booked = false ပြန်ပြောင်းပေးမယ်
         await pool.query(
             'UPDATE time_slots SET is_booked = false WHERE slot_id = $1',
             [slot_id]
