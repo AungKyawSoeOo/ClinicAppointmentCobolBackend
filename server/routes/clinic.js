@@ -112,4 +112,40 @@ router.get("/clinics/:id", async (req, res) => {
     }
 });
 
+// ဆရာဝန်တစ်ဦးချင်းစီ၏ သတ်မှတ်ရက်စွဲအလိုက် Bookings အစစ်အမှန်များကို ဆွဲထုတ်ပေးမည့် API
+router.get('/clinics/doctors/:doctorId/bookings', async (req, res) => {
+    const { doctorId } = req.params;
+    const { date } = req.query; // Query string ကနေ yyyy-MM-dd ပုံစံနဲ့ လာပါမယ်
+
+    try {
+        const queryText = `
+            SELECT 
+                ts.slot_id,
+                ts.slot_start,
+                ts.slot_end,
+                ts.is_booked,
+                a.status AS appointment_status,
+                p.full_name AS "patientName",
+                p.phone AS "patientPhone",
+                u.email AS "patientEmail"
+            FROM time_slots ts
+            LEFT JOIN appointments a ON ts.slot_id = a.slot_id
+            LEFT JOIN patients p ON a.patient_id = p.patient_id
+            LEFT JOIN users u ON p.user_id = u.user_id
+            WHERE ts.doctor_id = $1 AND ts.slot_date = $2
+            ORDER BY ts.slot_start ASC;
+        `;
+
+        const result = await db.query(queryText, [doctorId, date]);
+
+        res.status(200).json({
+            success: true,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error('Error fetching doctor shift bookings:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+});
+
 module.exports = router;
