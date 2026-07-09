@@ -24,7 +24,7 @@ try{
         const originalDirectory = process.cwd();
         try {
             process.chdir(libsFolder);
-            const libcob = koffi.load(libcobPath);
+            libcob = koffi.load(libcobPath);
             const initCobol = libcob.func("cob_init", "void", ["int", "void*"]);
             initCobol(0, null);
 
