@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const userRegisterService = require("../services/userRegisterService");
 const clinicRegisterService = require("../services/clinicRegisterService");
+const userLoginService = require("../services/loginService");
 const db = require("../../db");
 const bcrypt = require('bcrypt');
 const multer = require('multer');
@@ -112,6 +113,12 @@ router.post("/register-clinic", upload.single('licensePhoto'), async (req, res) 
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
+    // Validate with COBOL
+    const isValidationPassed = await userLoginService.userLogin(email, password);
+    console.log("Validation result from COBOL:", isValidationPassed);
+    if (!isValidationPassed) {
+        return res.status(400).json({ message: "Login failed", result: false });
+    }
     try {
         // Check if user exists and join patients to get the full name
         const userRes = await db.query(
