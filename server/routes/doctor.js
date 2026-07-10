@@ -4,6 +4,9 @@ const db = require('../../db');
 const moment = require('moment');
 const { generateTimeslots } = require('../services/timeslotService');
 
+// Import the COBOL validation service
+const doctorRegisterService = require('../services/doctorRegisterService');
+
 // Create a new doctor and generate initial timeslots
 router.post('/doctors', async (req, res) => {
     try {
@@ -20,6 +23,28 @@ router.post('/doctors', async (req, res) => {
             end_time
         } = req.body;
 
+        // 1. Validate with COBOL (Just like in user.auth.js)
+        const isValidationPassed = await doctorRegisterService.doctorRegister(
+            clinic_id, 
+            doctor_name, 
+            doctor_license_no, 
+            specialization, 
+            experience, 
+            phone, 
+            consultation_duration, 
+            working_days, 
+            start_time, 
+            end_time
+        );
+
+        if (!isValidationPassed) {
+            return res.status(400).json({ 
+                result: false, 
+                message: 'Doctor registration validation failed. Please check the provided data.' 
+            });
+        }
+
+        // 2. Insert into PostgreSQL after validation passes
         const result = await db.query(
             `INSERT INTO doctors (clinic_id, doctor_name, doctor_license_no, specialization, experience, phone, consultation_duration, working_days, start_time, end_time) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING doctor_id`,
@@ -64,7 +89,6 @@ router.get('/clinics/:clinicId/doctors', async (req, res) => {
             `, [doc.doctor_id]);
 
             doc.time_slots = slotsRes.rows;
-
         }
         res.status(200).json({ result: true, data: doctors });
     } catch (error) {
