@@ -115,7 +115,6 @@ router.post("/login", async (req, res) => {
 
     // Validate with COBOL
     const isValidationPassed = await userLoginService.userLogin(email, password);
-    console.log("Validation result from COBOL:", isValidationPassed);
     if (!isValidationPassed) {
         return res.status(400).json({ message: "Login failed", result: false });
     }
