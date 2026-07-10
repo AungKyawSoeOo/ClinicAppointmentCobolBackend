@@ -71,11 +71,6 @@ router.put('/cancel/:appointmentId', async (req, res) => {
             [appointmentId]
         );
 
-        await pool.query(
-            'UPDATE time_slots SET is_booked = false WHERE slot_id = $1',
-            [slot_id]
-        );
-
         res.status(200).json({
             success: true,
             message: 'Appointment cancelled successfully'
