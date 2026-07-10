@@ -1,4 +1,4 @@
-IDENTIFICATION DIVISION.
+       IDENTIFICATION DIVISION.
        PROGRAM-ID. DOCTOR_REGISTER.
 
        DATA DIVISION.
@@ -66,7 +66,7 @@ IDENTIFICATION DIVISION.
                MOVE 0 TO L-RESULT
            END-IF.
 
-           *> 8. Working Days Array (Check that at least 1 valid day exists)
+           *> 8. Working Days (Check that at least 1 valid day exists)
            MOVE 0 TO WS-VALID-DAYS
            PERFORM VARYING WS-IDX FROM 1 BY 1 UNTIL WS-IDX > 7
                IF L-DAY(WS-IDX) >= 1 AND L-DAY(WS-IDX) <= 7 THEN
