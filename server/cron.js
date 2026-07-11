@@ -24,7 +24,8 @@ function initCron() {
         }
     });
 
-    cron.schedule('* * * * *', async () => { // *15 means every 15 minutes
+    cron.schedule('*/15 * * * *', async () => { // *15 means every 15 minutes
+
         try {
             const currentDateStr = moment().format('YYYY-MM-DD');
             const currentTimeStr = moment().format('HH:mm:ss');
