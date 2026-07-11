@@ -34,8 +34,8 @@ router.get('/:userId/bookings', async (req, res) => {
             WHERE a.patient_id = $1
             ORDER BY
                 CASE WHEN a.status = 'booked' THEN 1 ELSE 2 END ASC,
-                ts.slot_date DESC,
-                ts.slot_start DESC;
+                ts.slot_date,
+                ts.slot_start;
         `;
 
         const result = await pool.query(bookingsQuery, [patientId]);
