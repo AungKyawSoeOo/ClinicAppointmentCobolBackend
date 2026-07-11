@@ -15,13 +15,13 @@ router.get('/:userId/bookings', async (req, res) => {
         const patientId = patientResult.rows[0].patient_id;
 
         const bookingsQuery = `
-            SELECT 
+            SELECT
                 a.appointment_id AS id,
                 c.clinic_name AS "clinicName",
                 d.doctor_name AS "doctorName",
                 TO_CHAR(ts.slot_date, 'Mon DD, YYYY') AS date,
                 CONCAT(TO_CHAR(ts.slot_start, 'HH24:MI'), ' - ', TO_CHAR(ts.slot_end, 'HH24:MI')) AS time,
-                CASE 
+                CASE
                     WHEN a.status = 'booked' THEN 'Upcoming'
                     WHEN a.status = 'completed' THEN 'Completed'
                     WHEN a.status = 'cancelled' THEN 'Cancelled'
@@ -32,7 +32,10 @@ router.get('/:userId/bookings', async (req, res) => {
             JOIN doctors d ON ts.doctor_id = d.doctor_id
             JOIN clinics c ON d.clinic_id = c.clinic_id
             WHERE a.patient_id = $1
-            ORDER BY ts.slot_date DESC, ts.slot_start DESC;
+            ORDER BY
+                CASE WHEN a.status = 'booked' THEN 1 ELSE 2 END ASC,
+                ts.slot_date DESC,
+                ts.slot_start DESC;
         `;
 
         const result = await pool.query(bookingsQuery, [patientId]);
