@@ -23,6 +23,39 @@ function initCron() {
             console.error('Error in daily timeslot generation job:', error);
         }
     });
+
+    cron.schedule('* * * * *', async () => { // *15 means every 15 minutes
+        try {
+            const currentDateStr = moment().format('YYYY-MM-DD');
+            const currentTimeStr = moment().format('HH:mm:ss');
+            const autoCompleteQuery = `
+                UPDATE appointments
+                SET status = 'completed'
+                WHERE appointment_id IN (
+                    SELECT a.appointment_id
+                    FROM appointments a
+                    JOIN time_slots ts ON a.slot_id = ts.slot_id
+                    WHERE a.status = 'booked'
+                    AND (
+                        ts.slot_date < $1
+                        OR (ts.slot_date = $1 AND ts.slot_end < $2)
+                    )
+                )
+                RETURNING appointment_id;
+            `;
+
+            const result = await db.query(autoCompleteQuery, [currentDateStr, currentTimeStr]);
+
+            if (result.rows.length > 0) {
+                console.log(`Auto-completed ${result.rows.length} past appointments successfully.`);
+            } else {
+                console.log('No past appointments to auto-complete at this time.');
+            }
+
+        } catch (error) {
+            console.error('Error in auto-complete appointments job:', error);
+        }
+    });
 }
 
 module.exports = {
