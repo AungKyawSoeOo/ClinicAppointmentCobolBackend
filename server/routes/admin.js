@@ -36,6 +36,8 @@ router.get("/clinics", async (req, res) => {
                 liscense_number: row.clinic_license_no,
                 license_photo: row.license_photo,
                 location: locationParts.length > 0 ? locationParts.join(", ") : "N/A",
+                city: row.city_name || "N/A",
+                township: row.township_name || "N/A",
                 registeredDate: row.registered_date ? new Date(row.registered_date).toISOString().split('T')[0] : "N/A",
                 status: row.status // 'pending', 'active', 'inactive'
             };
