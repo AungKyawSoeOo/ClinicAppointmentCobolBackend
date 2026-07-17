@@ -207,6 +207,15 @@ router.put("/profile/:userId", async (req, res) => {
     const { userId } = req.params;
     const { full_name, phone, gender, dob } = req.body;
 
+    if (dob) {
+        const dobDate = new Date(dob);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        if (dobDate > today) {
+            return res.status(400).json({ message: "Date of birth cannot be in the future", result: false });
+        }
+    }
+
     try {
         await db.query('BEGIN');
 
