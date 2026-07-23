@@ -12,11 +12,12 @@ function initCron() {
             const doctorsRes = await db.query('SELECT doctor_id FROM doctors');
             const doctors = doctorsRes.rows;
 
-            // Generate timeslots for exactly 14 days from now
-            const targetDateStr = moment().add(14, 'days').format('YYYY-MM-DD');
+            // Generate timeslots for the next 14 days range
+            const startDateStr = moment().format('YYYY-MM-DD');
+            const endDateStr = moment().add(14, 'days').format('YYYY-MM-DD');
 
             for (let doc of doctors) {
-                await generateTimeslots(doc.doctor_id, targetDateStr, targetDateStr);
+                await generateTimeslots(doc.doctor_id, startDateStr, endDateStr);
             }
             console.log('Daily timeslot generation job completed.');
         } catch (error) {

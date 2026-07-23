@@ -12,9 +12,20 @@ async function generateTimeslots(doctorId, startDateStr, endDateStr) {
         let current = moment(startDateStr);
         const end = moment(endDateStr);
 
+        const existingRes = await db.query(
+            'SELECT DISTINCT slot_date FROM time_slots WHERE doctor_id = $1 AND slot_date >= $2 AND slot_date <= $3',
+            [doctorId, startDateStr, endDateStr]
+        );
+        const existingDates = new Set(existingRes.rows.map(row => moment(row.slot_date).format('YYYY-MM-DD')));
+
         const newSlots = [];
 
         while (current.isSameOrBefore(end)) {
+            const dateStr = current.format('YYYY-MM-DD');
+            if (existingDates.has(dateStr)) {
+                current.add(1, 'days');
+                continue;
+            }
             const dayOfWeek = current.isoWeekday(); // 1=Mon, 7=Sun
             if (working_days.includes(dayOfWeek) || working_days.includes(dayOfWeek.toString())) {
                 let slotStart = moment(current.format('YYYY-MM-DD') + ' ' + start_time, 'YYYY-MM-DD HH:mm:ss');
